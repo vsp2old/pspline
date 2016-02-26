@@ -1,5 +1,5 @@
 #! /usr/local/bin/ruby
-require '../pspline.so'
+require 'pspline'
 include PSPLINE
 
 =begin
