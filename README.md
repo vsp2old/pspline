@@ -69,9 +69,9 @@ degree of the polynominal
 [*d1*,...,*dj-1*]
 
 ## 3.4 Interpolation with period boundary condition
-PSPLINE::Bspline.new([*plist*], *n*, *j*, 1)   
+PSPLINE::Bspline.new([ *plist* ], *n*, *j*, 1)   
 - *plist*   
-[*x0,y0*],...,[*xn,yn*] (_yn_ = _y0_)   
+[ *x0,y0* ],...,[ *xn,yn* ] ( _yn_ = _y0_ )   
 - *n*   
 number of data points   
 - *j*   
@@ -156,7 +156,7 @@ degree of the polynominal
 ## 3.9 N variable M dimension parametric interpolation
 PSPLINE::Pspline.new([_xyzlist_],[_stulist_],[_n1_,...,_nn_],[_j1_,...,_jn_],[0,...,0])   
 - _xyzlist_   
-[...[_x1_,_y1_,...,_z1_],...],... (_n1_Å~...Å~_nn_ multidimensional array)   
+[...[_x1_,_y1_,...,_z1_],...],... (_n1_ÔøΩ~...ÔøΩ~_nn_ multidimensional array)   
 - _stulist_   
 [_s1_,...,_sn1_],[_t1_,...,_tn2_],...,[_u1_,...,_unn_]   
 - _n1_,...,_nn_   
@@ -167,7 +167,7 @@ list of degrees of the polynominal
 ## 3.10 N variable M dimension parametric period interpolation
 PSPLINE::Pspline.new([_xyzlist_],[_stulist_],[_n1_,...,_nn_],[_j1_,...,_jn_],[1,...,0])   
 - _xyzlist_   
-[...[_x1_,_y1_,...,_z1_],...],... (_n1_Å~...Å~_nn_ multidimensional array)   
+[...[_x1_,_y1_,...,_z1_],...],... (_n1_ÔøΩ~...ÔøΩ~_nn_ multidimensional array)   
 - _stulist_   
 [_s0_,...,_sn1_],[_t1_,...,_tn2_],...,[_u1_,...,_unn_]  
 - _n1_,...,_nn_   
@@ -178,7 +178,7 @@ list of degrees of the polynominal
 ## 3.11 N variable M dimension Riesenfeld interpolation
 PSPLINE::Pspline.new([_xyzlist_],[_stulist_],[_n1_,...,_nn_],[_j1_,...,_jn_],[2,...,2])   
 - _xyzlist_   
-[...[_x1_,_y1_,...,_z1_],...],... (_n1_Å~...Å~_nn_ multidimensional array)   
+[...[_x1_,_y1_,...,_z1_],...],... (_n1_ÔøΩ~...ÔøΩ~_nn_ multidimensional array)   
 - _stulist_   
 [_s1_,...,_sn1_],[_t1_,...,_tn2_],...,[_u1_,...,_unn_]   
 - _n1_,...,_nn_   
@@ -189,7 +189,7 @@ list of degrees of the polynominal
 ## 3.12 N variable M dimension Riesenfeld period interpolation
 PSPLINE::Pspline.new([_xyzlist_],[_stulist_],[_n1_,...,_nn_],[_j1_,...,_jn_],[3,...,2])   
 - _xyzlist_   
-[...[_x1_,_y1_,...,_z1_],...],... (_n1_Å~...Å~_nn_ multidimensional array)   
+[...[_x1_,_y1_,...,_z1_],...],... (_n1_ÔøΩ~...ÔøΩ~_nn_ multidimensional array)   
 - _stulist_   
 [_s0_,...,_sn1_],[_t1_,...,_tn2_],...,[_u1_,...,_unn_]   
 - _n1_,...,_nn_   
