@@ -110,7 +110,8 @@ degree of the polynominal
 
 PSPLINE::Bspline.new([_xylist_], _n_, _j_, 1)   
 - _xylist_   
-[_x0_, _y0_,...,_ym-1_],...,[_xn_, _yn_,...,_yn+m-1_] (_yn_ = _y0_,...,_yn+m-1_ = _ym-1_)   
+[_x0_, _y0_,...,_ym-1_],...,[_xn_, _yn_,...,_yn+m-1_]   
+Note) _yn_ = _y0_,...,_yn+m-1_ = _ym-1_   
 - _n_   
 number of data points   
 - _j_   
