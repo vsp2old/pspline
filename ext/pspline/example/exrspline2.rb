@@ -1,40 +1,12 @@
 #! /usr/local/bin/ruby
-require '../pspline.so'
+require 'pspline'
 include PSPLINE
-
-=begin
-
-N variable M dimension Reisenfeld interpolation
-
-【Module】		PSPLINE
-【Class】 		Pspline
-【Method】
-（1）new		Initialize
-	obj = Pspline.new([[[y1,...],...],...,[[yn,...],...]],[[x1,...,xn],...],[n,...],[j,...],[2,...])
-	:1 list of data points.
-	:2 list of variables
-	:3 size of variables
-	:4 dimension
-	:5 type
-（2）[]			Calculate interpolation
-	obj[x,...]
-（3）value		Calculate interpolation with differential value
-	:1 obj.value([x,...], b = 0)
-	:2 order of differential value （optional）
-（4）plot
-	obj.plot([[x1,...,xn],...], d, [b,...]) { |[x,...],[y,...]| ... }
-	:1 list of data points
-	:2 number of the division
-	:3 order of differential value （optional）
-=end
-
-# Reisenfeld interpolation
 
 nn = [4, 6]
 jj = [3, 2]
 ss = [3, 2]
 
-puts "# リーゼンフェルトスプライン曲面の補間計算"
+puts "# Reisenfeld interpolation"
 
 S = [0, 1, 2, 3, 4]
 T = [0, 1, 2, 3, 4, 5]

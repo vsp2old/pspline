@@ -1,32 +1,6 @@
 #! /usr/local/bin/ruby
-require '../pspline.so'
+require 'pspline'
 include PSPLINE
-
-=begin
-
-1 varable M dimension Riesenfeld periodic interpolation
-
-【Module】		PSPLINE
-【Class】 		Pspline
-【Method】
-（1）new		Initialize
-	obj = Pspline.new([[y0,...],...,[yn-1,...]],[[x0,...,xn]],[n],[j],[3])
-	:1 list of data points.
-	:2 list of variables
-	:3 size of variables
-	:4 dimension
-	:5 type
-（2）[]			Calculate interpolation
-	obj[x]
-（3）value		Calculate interpolation with differential value
-	obj.value(x, b = 0)
-	b: order of differential value （optional）
-（4）plot
-	obj.plot([[x0,...,xn]], d, b = 0) { |[x],[y,...]| ... }
-	:1 list of data points
-	:2 number of the division
-	:3 order of differential value （optional）
-=end
 
 n = 8
 j = 3

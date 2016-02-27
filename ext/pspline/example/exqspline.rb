@@ -1,34 +1,8 @@
 #! /usr/local/bin/ruby
-require '../pspline.so'
+require 'pspline'
 include PSPLINE
 
-=begin
-
-1 varable M dimension parametric periodic interpolation
-
-【Module】		PSPLINE
-【Class】 		Pspline
-【Method】
-（1）new		Initialize
-	obj = Pspline.new([[y0,...],...,[yn-1,...]],[[x0,...,xn]],[n],[j],[1])
-	:1 list of data points.
-	:2 list of variables
-	:3 size of variables
-	:4 dimension
-	:5 type
-（2）[]			Calculate interpolation
-	obj[x]
-（3）value		Calculate interpolation with differential value
-	obj.value(x, b = 0)
-	b:order of differential value （optional）
-（4）plot
-	obj.plot([[x0,...,xn]], d, b = 0) { |[x],[y,...]| ... }
-	:1 list of data points
-	:2 number of the division
-	:3 order of differential value （optional）
-=end
-
-puts "# parametric interpolation （Closed curve interpolation）"
+puts "# parametric period interpolation (Closed curve interpolation)"
 
 X = [0, 1, 2, 3, 4, 5, 6, 7, 8]
 
@@ -52,6 +26,6 @@ else
 end
 vv = [X]
 s = Qs.plot(vv, Dp, [Jbn]) do |a, b|
-	printf "% .3f, <% f, % f>\n", a[0], b[0], b[1]
+	printf "% .3f % f % f\n", a[0], b[0], b[1]
 end
 #STDERR.puts s
