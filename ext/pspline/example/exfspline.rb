@@ -2,53 +2,31 @@
 require 'pspline'
 include PSPLINE
 
-=begin
-
-1 varable M dimension parametric interpolation
-
-【Module】		PSPLINE
-【Module Function】
-
-（1）obj = PSPLINE#fft_complex_transform([[x1,y1],...,[xn,yn]], f)
-	obj => FFT:[[u1,...,un],[v1,...,vn]]
-	:1 list of complex data
-	:2 type 1 => forward, 0 => backword, -1 => inverse
-
-（2）obj = PSPLINE#fft_complex_get([[u1,...,un],[v1,...,vn]], t)
-	obj => [x,y]
-	:1 FFT_complex data
-	:2 data point ( -N/2 <= t <= N/2 + N%2 )
-
-（3）obj = PSPLINE#fft_complex_bspline([[u1,...,un],[v1,...,vn]], j)
-	obj => PSPLINE#Bspline
-	:1 FFT_complex data
-	:2 dimension
-
-=end
-
 puts "# complex FFT data points"
 
 XY = [ [0, 1],[0, 1],[0, 1],[1, 0,],[1, 0,],[1, 0],[1, 0],[0, 1],[0, 1],[0, 1] ]
 
-fs = fft_complex_transform(XY, 1);
-fs[0].each {|x| printf("% .2f ", x) }
+fs = Cfft.new(XY)
+fs.real.each {|x| printf("% .2f ", x) }
 puts
-fs[1].each {|y| printf("% .2f ", y) }
+fs.imag.each {|y| printf("% .2f ", y) }
 puts
 
+printf "Real :"
 -5.upto(5) {|t|
-	w = fft_complex_get(fs, t)
+	w = fs[t]
 	printf "% .2f ", w[0]
 }
 puts
+printf "Imag :"
 -5.upto(5) {|t|
-	w = fft_complex_get(fs, t)
+	w = fs[t]
 	printf "% .2f ", w[1]
 }
 puts
 
-vv = []
-bs = fft_complex_bspline(fs, 1) {|t, z| vv.push t}
+bs = fs.spline(1)
+vv = fs.axis
 
 puts "# Interpolation points"
 
@@ -57,7 +35,7 @@ s = bs.plot(vv, 4) do |a, b|
 end
 #STDERR.puts s
 
-st = fft_complex_transform(fs, -1)
+st = fs.inverse
 printf "["
 st.each {|x| printf "% .1f ", x[0]}
 printf "]\n["

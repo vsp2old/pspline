@@ -6,25 +6,25 @@ printf "# real FFT data points\n"
 
 X = [ 0, 0, 0, 1, 1, 1, 1, 0, 0, 0 ]
 
-fs = fft_real_transform(X, 1);
-fs.each {|x| printf("% .2f ", x) }
+fs = Rfft.new(X);
+fs.real.each {|x| printf("% .2f ", x) }
 puts
 
 printf "Real :"
 -5.upto(5) {|t|
-	w = fft_real_get(fs, t)
+	w = fs[t]
 	printf "% .2f ", w[0]
 }
 puts
 printf "Imag :"
 -5.upto(5) {|t|
-	w = fft_real_get(fs, t)
+	w = fs[t]
 	printf "% .2f ", w[1]
 }
 puts
 
-vv = []
-bs = fft_real_bspline(fs, 3) {|t, z| vv.push t}
+bs = fs.spline(3)
+vv = fs.axis
 
 puts "# Interpolation points"
 
@@ -33,7 +33,7 @@ s = bs.plot(vv, 4) do |a, b|
 end
 #STDERR.puts s
 
-st = fft_real_transform(fs, -1)
+st = fs.inverse
 printf "["
 st.each {|x| printf "% .1f ", x}
 puts "]"

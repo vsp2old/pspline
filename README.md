@@ -22,6 +22,13 @@ Or install it yourself as:
 
 See pspline.wiki at https://github.com/vsp2old/pspline .
 
+## Revision history
+
+5.0.0   Upload for test.   
+5.0.1	Upload for test.   
+5.0.2	Upload for release.   
+5.0.3	Add class PSPLINE::Rfft, class PSPLINE::Cfft.   
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
