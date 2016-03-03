@@ -83,8 +83,8 @@ _wrap_init_bspline(int argc, VALUE *argv, VALUE self)
 	int D = argp - argn;
 	if (D < 0)
 		rb_raise(rb_eArgError, "Data points %d < Data size %d", argp, argn);
-	if (D >= argj)
-		rb_raise(rb_eArgError, "Additional points %d >= Degree %d", D, argj);
+	if (D > argj)
+		rb_raise(rb_eArgError, "Additional points %d > Degree %d", D, argj);
 	if (argn <= argj)
 		rb_raise(rb_eArgError, "Data points %d <= Degree %d", argn, argj);
 	if (argc > 3) {
@@ -494,6 +494,52 @@ try {
 	return Wrap_bspline(cBspline, result);
 }
 
+static VALUE vfunc;
+
+static double ufunc(poly_array<double>& pa)
+{
+	int K = pa.unit_size();
+	VALUE *vp = ALLOC_N(VALUE, K);
+	for (int i = 0; i < K; i++) vp[i] = rb_float_new(pa[i]);
+	VALUE vresult = rb_funcall2(vfunc, rb_intern("call"), K, vp);
+	free(vp);
+	return NUM2DBL(vresult);
+}
+
+static VALUE
+_wrap_bspline_lint(int argc, VALUE *argv, VALUE self)
+{
+	bspline<double> *arg0;		// bspline object
+	VALUE vargu, vargx, vargy;
+	Get_bspline(self, arg0);
+	rb_scan_args(argc, argv, "22", &vfunc, &vargu, &vargx, &vargy);
+	int c = arg0->Icox(), j = arg0->Jisu(), n;
+	double *q = arg0->Knots(), x = arg0->x_min(), y = arg0->x_max();
+	Check_Type(vargu, T_ARRAY);
+	int argn = RARRAY_LEN(vargu);
+	n = argn > 0 ? argn : c - j + 1;
+	double *u = ALLOC_N(double, n);
+	for (int i = 0; i < n; i++)
+		if (argn > 0) {
+			u[i] = NUM2DBL(RARRAY_PTR(vargu)[i]);
+			if (u[i] < x || y < u[i] || (i > 0 && u[i] <= u[i-1]))
+				rb_raise(rb_eArgError, "Illegal argument");
+		} else {
+			u[i] = x + i * (y - x) / (n - 1);
+			rb_ary_push(vargu, rb_float_new(u[i]));
+		}
+	x = (argc >= 3) ? NUM2DBL(vargx) : u[0];
+	y = (argc == 4) ? NUM2DBL(vargy) :   0 ;
+	bspline<double> *result;
+try {
+	result = arg0->line_integral(ufunc, n, u, x, y);
+} catch (const char *c) {
+	rb_raise(rb_eRuntimeError, "%s", c);
+}
+	free(u);
+	return Wrap_bspline(cBspline, result);
+}
+
 static void
 _wrap_Init_bspline(void)
 {
@@ -505,6 +551,7 @@ _wrap_Init_bspline(void)
 	rb_define_method(cBspline, "value", VALUEFUNC(_wrap_bspline_value), -1);
 	rb_define_method(cBspline, "sekibun", VALUEFUNC(_wrap_bspline_sekibun), 1);
 	rb_define_method(cBspline, "plot", VALUEFUNC(_wrap_bspline_plot), -1);
+	rb_define_method(cBspline, "line_integral", VALUEFUNC(_wrap_bspline_lint), -1);
 	rb_define_module_function(mPspline, "fft_complex_transform", VALUEFUNC(_wrap_complex_trans), 2);
 	rb_define_module_function(mPspline, "fft_complex_get", VALUEFUNC(_wrap_complex_get), 2);
 	rb_define_module_function(mPspline, "fft_complex_bspline", VALUEFUNC(_wrap_complex_bspline), 2);
