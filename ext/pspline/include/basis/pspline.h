@@ -1,6 +1,18 @@
 #ifndef _PSPLINE_5_H_INCLUDED_
 #define _PSPLINE_5_H_INCLUDED_
 
+template <typename T>
+void poly_new_subst(int n, T **w)
+{
+	for (int i = 0; i < n; ++i) w[i] = NULL;
+}
+
+template <typename T, class... Args>
+void poly_new_subst(int n, T **w, const T *car, const Args... cdr)
+{
+	w[0] = new T(*car); if (n > 1) poly_new_subst(n-1, &w[1], cdr...);
+}
+
 /*******************************************************************************
 	define poly_spline[base_spline1*,...base_splineN*]
 *******************************************************************************/
@@ -26,6 +38,7 @@ struct values_ {
 } *values;
 
 // constructor
+poly_spline() : base(NULL), values(NULL) {}
 poly_spline(const comb_array<S>& x, const Int& n, const Int& j, const Int& s) : N(x.grid())
 {
 	base = new base_spline<S>*[N];
@@ -33,8 +46,36 @@ poly_spline(const comb_array<S>& x, const Int& n, const Int& j, const Int& s) : 
 		base[i] = new base_spline<S>(n[i], x[i], j[i], -s[i]%2);
 	values = new values_(*this, n.unit_size());
 }
+template <class... Args>
+poly_spline(int k, const base_spline<S> *bsc, Args... bsd)
+ : N(sizeof...(bsd)+1), base(new base_spline<S>*[sizeof...(bsd)+1])
+{
+	base[0] = new base_spline<S>(*bsc);
+	if (N > 1) poly_new_subst(N-1, &base[1], bsd...);
+	values = new values_(*this, k);
+}
+poly_spline(int k, const poly_spline<S> *ps, const base_spline<S> *bs)
+ : N(ps->Grid()+1), base(new base_spline<S>*[ps->Grid()+1])
+{
+	for (int i = 0; i < N-1; i++) {
+		const base_spline<S>& b = (*ps)[i];
+		base[i] = new base_spline<S>(b);
+	}
+	base[N-1] = new base_spline<S>(*bs);
+	values = new values_(*this, k);
+}
+poly_spline(int k, const base_spline<S> *bs, const poly_spline<S> *ps)
+ : N(ps->Grid()+1), base(new base_spline<S>*[ps->Grid()+1])
+{
+	base[0] = new base_spline<S>(*bs);
+	for (int i = 1; i < N; i++) {
+		const base_spline<S>& b = (*ps)[i-1];
+		base[i] = new base_spline<S>(b);
+	}
+	values = new values_(*this, k);
+}
 // copy constructor
-poly_spline(const poly_spline& p) : N(p.N)
+poly_spline(const poly_spline& p) : N(p.N), base(new base_spline<S>*[p.N])
 {
 	for (int i = 0; i < N; i++)
 		base[i] = new base_spline<S>(*p.base[i]);
@@ -47,9 +88,9 @@ poly_spline& operator=(const poly_spline& p)
 {
 	if (this != &p) {
 		delete[] base;
-		int N = p.N;
+		N = p.N; base = new base_spline<S>*[p.N];
 		for (int i = 0; i < N; i++) {
-			base[i] = base_spline<S>(*p.base[i]);
+			base[i] = new base_spline<S>(*p.base[i]);
 		}	delete values;
 		values = new values_(*this, p.values->imax.unit_size());
 	}
@@ -130,9 +171,9 @@ void sekibun(poly_view<T>& r, const poly_view<T>& clp, const poly<int>& h, const
 	FREE(sp);
 }
 
-base_spline<S>& operator[](int i) {return *base[i];}
+base_spline<S>& operator[](int i) const {return *base[i];}
 
-int Grid() {return N;}
+int Grid() const {return N;}
 
 Int Kset(const poly<S>& x) const
 {
@@ -204,11 +245,16 @@ class pspline : public poly_spline<S>
 	// constructor
 	pspline():clp(NULL){}
 	pspline(const poly_array<T>&, const comb_array<S>&, const Int&, const Int&);
+	template <class... Args>
+	pspline(int k, T *v, Args... bset)
+	 : poly_spline<S>(k, bset...), K(k), clp(v) {}
 	pspline(const pspline&);
 	// destructor
 	~pspline() { delete[] clp; }
 	// operator
 	pspline& operator=(const pspline&);
+	poly_array<T> operator[](S t) const { return (*this)(t); }
+	poly_array<T> operator()(S, int = 0) const;
 	poly_array<T> operator[](const poly<S>& p) const {return (*this)(p);}
 	poly_array<T> operator()(const poly<S>&, const int* = NULL) const;
 	poly_array<T> operator()(const poly<S>&, int, T*) const;
@@ -237,7 +283,7 @@ pspline<T,S>::pspline(const poly_array<T>& p, const comb_array<S>& x, const Int&
 template <typename T, typename S>
 pspline<T,S>::pspline(const pspline& ps) : poly_spline<S>(ps), K(ps.K)
 {
-	Int c = poly_spline<S>::icox;
+	Int c = poly_spline<S>::values->icox;
 	int len = c.data_size();
 	clp = new T[len];
 	memcpy(clp, (T*)ps, len * sizeof(T));
@@ -249,7 +295,7 @@ pspline<T,S>& pspline<T,S>::operator=(const pspline& ps)
 	if (this != &ps) {
 		delete clp;
 		poly_spline<S>::operator=(ps); K = ps.K;
-		Int c = poly_spline<S>::icox;
+		Int c = poly_spline<S>::values->icox;
 		int len = c.data_size();
 		clp = new T[len];
 		memcpy(clp, (T*)ps, len * sizeof(T));
@@ -316,6 +362,29 @@ poly_array<T> pspline<T,S>::sekibun(const poly<S>& t) const
 		poly_spline<S>::sekibun(R, clw, h, t);
 	}
 	return poly_array<T>(result, a);
+}
+
+template <typename T, typename S>
+poly_array<T> pspline<T,S>::operator()(S t, int b) const
+{
+	int N = this->Grid();
+	S w[N+1]; for (int i = 0; i < N; i++) w[i] = t; w[N] = 0;
+	poly<S> u(w, N);
+	if (!(poly_spline<S>::values->jisu >= b))
+		throw "out of range, pspline()";
+	T result[K]; for (int i = 0; i < K; ++i) result[i] = 0;
+	poly_view<T> res(result, K);
+	comp_array<S> pc = poly_spline<S>::bases(u, b);
+	Int& c = poly_spline<S>::values->icox;
+	poly_view<T> clv(clp, c);
+	Int offset = pc.offset(), size = pc.size();
+	int s = size.grid_size();
+	for (int i = 0; i < s; ++i)
+	{
+		Int k = i % size, l = k + offset;
+		res += clv[l] * pc[k = b + 1][b];
+	}
+	return poly_array<T>(result, K);
 }
 
 //	１変数Ｎ次元パラメトリックスプライン
@@ -485,21 +554,72 @@ bspline<T,S> *bspline<T,S>::line_integral(T(*F)(poly_array<S>&), int n, S *u, S 
 	poly_array<T> Ya(Y, 1, N, 1);
 	return new bspline<T,S>(Ya, n, X, base_spline<S>::jisu, 0, D);
 }
+
+template <class T, class S>
+pspline<T,S> operator * (const bspline<T,S>& bs1, const bspline<T,S>& bs2)
+{
+	int k1 = bs1.Unit_size(), k2 = bs2.Unit_size();
+	assert(k1 == k2);
+	int c1 = bs1.Icox(), c2 = bs2.Icox();
+	T *cp1 = bs1, *cp2 = bs2, *cp3 = new T[c1*c2*k1];
+	for (int i = 0; i < k1; i++) {
+		varray_view<T> v1(cp1+i, c1, k1), v2(cp2+i, c2, k2), v3(cp3+i, c1*c2, k1);
+		kronecker(v1, v2, v3);
+	}
+	const base_spline<S>& bt1 = bs1;
+	const base_spline<S>& bt2 = bs2;
+	return pspline<T,S>(k1, cp3, &bt1, &bt2);
+}
+
+template <class T, class S>
+pspline<T,S> operator * (const pspline<T,S>& ps, const bspline<T,S>& bs2)
+{
+	int k2 = bs2.Unit_size(), c2 = bs2.Icox();
+	const poly_spline<S>& ps1 = ps;
+	const Int& c = ps1.values->icox;
+	int k1 = c.unit_size(), c1 = c.grid_size();
+	assert(k1 == k2);
+	T *cp1 = ps, *cp2 = bs2, *cp3 = new T[c1*c2*k2];
+	for (int i = 0; i < k1; i++) {
+		varray_view<T> v1(cp1+i, c1, k1), v2(cp2+i, c2, k2), v3(cp3+i, c1*c2, k1);
+		kronecker(v1, v2, v3);
+	}
+	const base_spline<S>& bt2 = bs2;
+	return pspline<T,S>(k2, cp3, &ps1, &bt2);
+}
+
+template <class T, class S>
+pspline<T,S> operator * (const bspline<T,S>& bs1, const pspline<T,S>& ps)
+{
+	int k1 = bs1.Unit_size(), c1 = bs1.Icox();
+	const poly_spline<S>& ps2 = ps;
+	const Int& c = ps2.values->icox;
+	int k2 = c.unit_size(), c2 = c.grid_size();
+	assert(k1 == k2);
+	T *cp1 = bs1, *cp2 = ps, *cp3 = new T[c1*c2*k1];
+	for (int i = 0; i < k1; i++) {
+		varray_view<T> v1(cp1+i, c1, k1), v2(cp2+i, c2, k2), v3(cp3+i, c1*c2, k1);
+		kronecker(v1, v2, v3);
+	}
+	const base_spline<S>& bt1 = bs1;
+	return pspline<T,S>(k1, cp3, &bt1, &ps2);
+}
 //
 //	misc
 //
+// 偏微分プロット
 template <class T, class S = double>
 int plot(const pspline<T,S>&, const comb_array<S>&, S**, T**, int, const int* = NULL);
-
+// 全微分プロット
 template <class T, class S = double>
 int plot(const pspline<T,S>&, const comb_array<S>&, S**, T**, int, int, S*);
-
+// １変数関数積プロット
 template <class T, class S = double>
 int plot(const pspline<T,S>&, int, S*, S**, T**, int, int = 0);
-
+// １変数関数プロット（インデックス）
 template <class T, class S = double>
 int plot(const bspline<T,S>&, const comb_array<S>&, S**, T**, int, int = 0);
-
+// １変数関数プロット
 template <class T, class S = double>
 int plot(const bspline<T,S>&, int, S*, S**, T**, int, int = 0);
 

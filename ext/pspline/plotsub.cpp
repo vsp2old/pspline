@@ -11,6 +11,7 @@
 #include "basis/basis.h"
 #include "basis/pspline.h"
 
+// 偏微分プロット
 template <typename T, typename S>
 int plot(const pspline<T,S>& B, const comb_array<S>& x, S **Xp, T **Yp, int Dp, const int *b)
 {
@@ -32,6 +33,9 @@ int plot(const pspline<T,S>& B, const comb_array<S>& x, S **Xp, T **Yp, int Dp, 
 	return Npx;
 }
 
+template int plot(const pspline<double>&, const comb_array<double>&, double**, double**, int, const int*);
+
+// 全微分プロット
 template <typename T, typename S>
 int plot(const pspline<T,S>& B, const comb_array<S>& x, S **Xp, T **Yp, int Dp, int Jbn, S *jb)
 {
@@ -53,11 +57,13 @@ int plot(const pspline<T,S>& B, const comb_array<S>& x, S **Xp, T **Yp, int Dp, 
 	return Npx;
 }
 
+template int plot(const pspline<double>&, const comb_array<double>&, double**, double**, int, int, double*);
+
+// １変数関数積プロット
 template <typename T, typename S>
 int plot(const pspline<T,S>& B, int n, S *x, S **Xp, T **Yp, int Dp, int b)
 {
 	int K = B.Unit_size();
-	int jb[] = {b};
 
 	int Npx = (n - 1) * Dp + 1;
 	*Xp = T_ALLOC(S, Npx);
@@ -68,15 +74,17 @@ int plot(const pspline<T,S>& B, int n, S *x, S **Xp, T **Yp, int Dp, int b)
 		for (int Nd = N0; Nd <= Dp; Nd++) {
 			int Np = Nd + (L-1) * Dp;
 			S Tp = x[L-1] + Nd * DT;
-			poly<S> Sp(1, Tp, (S)0);
 			(*Xp)[Np] = Tp;
-			poly_array<T> Z = B(Sp, jb);
+			poly_array<T> Z = B(Tp, b);
 			for (int i = 0; i < K; ++i) Yp[i][Np] = Z[i];
 		}
 	}
 	return Npx;
 }
 
+template int plot(const pspline<double>&, int, double *, double **, double **, int, int);
+
+// １変数関数プロット（インデックス）
 template <typename T, typename S>
 int plot(const bspline<T,S>& B, const comb_array<S>& x, S **Xp, T **Yp, int Dp, int Jbn)
 {
@@ -102,6 +110,9 @@ int plot(const bspline<T,S>& B, const comb_array<S>& x, S **Xp, T **Yp, int Dp, 
 	return Npx;
 }
 
+template int plot(const bspline<double>&, const comb_array<double>&, double **, double **, int, int);
+
+// １変数関数プロット
 template <typename T, typename S>
 int plot(const bspline<T,S>& B, int n, S *x, S **Xp, T **Yp, int Dp, int b)
 {
@@ -124,9 +135,5 @@ int plot(const bspline<T,S>& B, int n, S *x, S **Xp, T **Yp, int Dp, int b)
 	return Npx;
 }
 
-template int plot(const pspline<double,double>&, const comb_array<double>&, double**, double**, int, const int*);
-template int plot(const pspline<double,double>&, const comb_array<double>&, double**, double**, int, int, double*);
-template int plot(const pspline<double,double>&, int, double *, double **, double **, int, int);
-template int plot(const bspline<double,double>&, const comb_array<double>&, double **, double **, int, int);
-template int plot(const bspline<double,double>&, int, double *, double **, double **, int, int);
+template int plot(const bspline<double>&, int, double *, double **, double **, int, int);
 

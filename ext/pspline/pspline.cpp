@@ -540,6 +540,8 @@ try {
 	return Wrap_bspline(cBspline, result);
 }
 
+static VALUE _wrap_bspline_mul(VALUE self, VALUE varg);
+
 static void
 _wrap_Init_bspline(void)
 {
@@ -552,6 +554,7 @@ _wrap_Init_bspline(void)
 	rb_define_method(cBspline, "sekibun", VALUEFUNC(_wrap_bspline_sekibun), 1);
 	rb_define_method(cBspline, "plot", VALUEFUNC(_wrap_bspline_plot), -1);
 	rb_define_method(cBspline, "line_integral", VALUEFUNC(_wrap_bspline_lint), -1);
+	rb_define_method(cBspline, "*", VALUEFUNC(_wrap_bspline_mul), 1);
 	rb_define_module_function(mPspline, "fft_complex_transform", VALUEFUNC(_wrap_complex_trans), 2);
 	rb_define_module_function(mPspline, "fft_complex_get", VALUEFUNC(_wrap_complex_get), 2);
 	rb_define_module_function(mPspline, "fft_complex_bspline", VALUEFUNC(_wrap_complex_bspline), 2);
@@ -725,33 +728,31 @@ _wrap_pspline_bracket(int argc, VALUE *argv, VALUE self)
 	Get_pspline(self, bsp);
 	int N = bsp->Grid();
 	int K = bsp->Unit_size();
-
-	vargs = make_list(argc, argv);
-	argc = RARRAY_LEN(vargs);
-	int M = argc / N;
 try {
-	if (argc % N == 0) {
-		mresult = rb_ary_new();
-		for (int m = 0; m < M; ++m) {
+	mresult = rb_ary_new();
+	for (int m = 0; m < argc; ++m) {
+		poly_array<double> val;
+		if (TYPE(argv[m]) == T_ARRAY) {
 			double args[N+1];
 			for (int i = 0; i < N; ++i)
-				args[i] = NUM2DBL(RARRAY_PTR(vargs)[N*m+i]);
+				args[i] = NUM2DBL(RARRAY_PTR(argv[m])[i]);
 			poly<double> arg(args, N);
-			poly_array<double> val = (*bsp)[arg];
-			if (K == 1) 
-				vresult = rb_float_new(val[0]);
-			else {
-				vresult = rb_ary_new();
-				for (int j = 0; j < K; ++j)
-					rb_ary_push(vresult, rb_float_new(val[j]));
-			}
-			rb_ary_push(mresult, vresult);
+			val = (*bsp)[arg];
+		} else
+			val = (*bsp)[NUM2DBL(argv[m])];
+		if (K == 1) 
+			vresult = rb_float_new(val[0]);
+		else {
+			vresult = rb_ary_new();
+			for (int j = 0; j < K; ++j)
+				rb_ary_push(vresult, rb_float_new(val[j]));
 		}
-	} else rb_raise(rb_eArgError, "wrong argument []");
+		rb_ary_push(mresult, vresult);
+	}
 } catch (const char *c) {
 	rb_raise(rb_eRuntimeError, "%s", c);
 }
-	return M == 1 ? rb_ary_shift(mresult) : mresult;
+	return argc == 1 ? rb_ary_shift(mresult) : mresult;
 }
 /*******************************************************************************
 	関数値
@@ -913,6 +914,48 @@ try {
 	return INT2NUM(result);
 }
 
+static VALUE
+_wrap_bspline_mul(VALUE self, VALUE varg)
+{
+	bspline<double> *arg0;
+	Get_bspline(self, arg0);
+	pspline<double> result;
+	if (rb_obj_is_kind_of(varg, cBspline)) {
+		bspline<double> *arg1;
+	    Data_Get_Struct(varg, bspline<double>, arg1);
+	    if (!arg1) rb_raise(rb_eRuntimeError, "This bspline already released");
+		auto res = (*arg0) * (*arg1);
+	printf("Enter bspline Mul bspline\n");
+		result = res;
+	} else if (rb_obj_is_kind_of(varg, cPspline)) {
+		pspline<double> *arg1;
+	    Data_Get_Struct(varg, pspline<double>, arg1);
+	    if (!arg1) rb_raise(rb_eRuntimeError, "This pspline already released");
+		result = (*arg0) * (*arg1);
+	} else
+		rb_raise(rb_eArgError, "Illegal argument");
+	return Wrap_pspline(cPspline, new pspline<double>(result));
+}
+
+static VALUE
+_wrap_pspline_mul(VALUE self, VALUE varg)
+{
+	pspline<double> *arg0;
+	Get_pspline(self, arg0);
+	pspline<double> result;
+	if (rb_obj_is_kind_of(varg, cBspline)) {
+		bspline<double> *arg1;
+		Get_bspline(varg, arg1);
+		result = (*arg0) * (*arg1);
+	}/* else if (rb_obj_is_kind_of(varg, cPspline)) {
+		pspline<double> *arg1;
+		Get_pspline(varg, arg1);
+		result = (*arg0) * (*arg1);
+	}*/ else
+		rb_raise(rb_eArgError, "Illegal argument");
+	return Wrap_pspline(cPspline, new pspline<double>(result));
+}
+
 static void
 _wrap_Init_pspline(void)
 {
@@ -924,6 +967,7 @@ _wrap_Init_pspline(void)
 	rb_define_method(cPspline, "value", VALUEFUNC(_wrap_pspline_value), -1);
 	rb_define_method(cPspline, "sekibun", VALUEFUNC(_wrap_pspline_sekibun), -1);
 	rb_define_method(cPspline, "plot", VALUEFUNC(_wrap_pspline_plot), -1);
+	rb_define_method(cPspline, "*", VALUEFUNC(_wrap_pspline_mul), 1);
 }
 
 #ifdef __cplusplus
