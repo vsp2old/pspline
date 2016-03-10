@@ -39,7 +39,7 @@ elsif Jbn < 0
 end
 
 s = Ps.plot(vv, Dp, Jbn) do |a,b|
-	c = As[a]
+	c = Ps.value(a[0],2)
 	printf "% .2f % f % f\n", a[0], b[0], c
 end
 # STDERR.puts s
