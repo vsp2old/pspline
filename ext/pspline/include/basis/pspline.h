@@ -74,6 +74,12 @@ poly_spline(int k, const base_spline<S> *bs, const poly_spline<S> *ps)
 	}
 	values = new values_(*this, k);
 }
+poly_spline(int k, const base_spline<S>& bsc)
+ : N(1), base(new base_spline<S>*[1])
+{
+	base[0] = new base_spline<S>(bsc);
+	values = new values_(*this, k);
+}
 // copy constructor
 poly_spline(const poly_spline& p) : N(p.N), base(new base_spline<S>*[p.N])
 {
@@ -223,6 +229,7 @@ size_t *Maxq() const
 // end poly_spline
 };
 
+template <class T, class S> class bspline;
 /*******************************************************************************
 	Ｎ変数Ｋ次元パラメトリック ＆ リーゼンフェルト スプライン補間
 	     int N : number of parameters (Grid)
@@ -248,6 +255,14 @@ class pspline : public poly_spline<S>
 	template <class... Args>
 	pspline(int k, T *v, Args... bset)
 	 : poly_spline<S>(k, bset...), K(k), clp(v) {}
+	pspline(const bspline<T,S>& bs)
+	 : poly_spline<S>(bs.Unit_size(), base_spline<S>(bs)), K(bs.Unit_size())
+	{
+		const Int& c = poly_spline<S>::values->icox;
+		int s = c.data_size();
+		clp = new T[s];
+		memcpy(clp, (T*)bs, s * sizeof(T));
+	}
 	pspline(const pspline&);
 	// destructor
 	~pspline() { delete[] clp; }
@@ -267,8 +282,8 @@ template <typename T, typename S>
 pspline<T,S>::pspline(const poly_array<T>& p, const comb_array<S>& x, const Int& j, const Int& s)
  : poly_spline<S>(x, Int(p), j, s), K(p.unit_size())
 {
-	Int a = poly_spline<S>::values->imax;
-	Int c = poly_spline<S>::values->icox;
+	const Int& a = poly_spline<S>::values->imax;
+	const Int& c = poly_spline<S>::values->icox;
 	T *alp = clp = new T[c.data_size()];
 	poly_view<T> alv(alp, a), clv(clp, c);
 	if (s < 2) {
@@ -283,7 +298,7 @@ pspline<T,S>::pspline(const poly_array<T>& p, const comb_array<S>& x, const Int&
 template <typename T, typename S>
 pspline<T,S>::pspline(const pspline& ps) : poly_spline<S>(ps), K(ps.K)
 {
-	Int c = poly_spline<S>::values->icox;
+	const Int& c = poly_spline<S>::values->icox;
 	int len = c.data_size();
 	clp = new T[len];
 	memcpy(clp, (T*)ps, len * sizeof(T));
@@ -295,7 +310,7 @@ pspline<T,S>& pspline<T,S>::operator=(const pspline& ps)
 	if (this != &ps) {
 		delete clp;
 		poly_spline<S>::operator=(ps); K = ps.K;
-		Int c = poly_spline<S>::values->icox;
+		const Int& c = poly_spline<S>::values->icox;
 		int len = c.data_size();
 		clp = new T[len];
 		memcpy(clp, (T*)ps, len * sizeof(T));
@@ -314,7 +329,7 @@ poly_array<T> pspline<T,S>::operator()(const poly<S>& t, const int *jb) const
 	T result[K]; for (int i = 0; i < K; ++i) result[i] = 0;
 	poly_view<T> res(result, K);
 	comp_array<S> pc = poly_spline<S>::basis(t, jb);
-	Int& c = poly_spline<S>::values->icox;
+	const Int& c = poly_spline<S>::values->icox;
 	poly_view<T> clv(clp, c);
 	Int offset = pc.offset(), size = pc.size();
 	int s = size.grid_size();
@@ -334,7 +349,7 @@ poly_array<T> pspline<T,S>::operator()(const poly<S>& t, int jbn, T *ds) const
 	T result[K]; for (int i = 0; i < K; ++i) result[i] = 0;
 	poly_view<T> res(result, K);
 	comp_array<S> pc = poly_spline<S>::bases(t, jbn);
-	Int& c = poly_spline<S>::values->icox;
+	const Int& c = poly_spline<S>::values->icox;
 	poly_view<T> clv(clp, c);
 	Int offset = pc.offset(), size = pc.size();
 	int s = size.grid_size();
@@ -375,7 +390,7 @@ poly_array<T> pspline<T,S>::operator()(S t, int b) const
 	T result[K]; for (int i = 0; i < K; ++i) result[i] = 0;
 	poly_view<T> res(result, K);
 	comp_array<S> pc = poly_spline<S>::bases(u, b);
-	Int& c = poly_spline<S>::values->icox;
+	const Int& c = poly_spline<S>::values->icox;
 	poly_view<T> clv(clp, c);
 	Int offset = pc.offset(), size = pc.size();
 	int s = size.grid_size();
@@ -449,11 +464,11 @@ bspline<T,S>::bspline(
 }
 
 template <class T, class S>
-bspline<T,S>::bspline(const bspline& s) : base_spline<S>(s)
+bspline<T,S>::bspline(const bspline& s) : base_spline<S>(s), K(s.K)
 {
 	int c = base_spline<S>::icox;
-	clp = new T[c];
-	memcpy(clp, s, c * sizeof(T));
+	clp = new T[c * K];
+	memcpy(clp, (T*)s, c * K * sizeof(T));
 }
 
 template <class T, class S>
@@ -461,10 +476,11 @@ bspline<T,S>& bspline<T,S>::operator=(const bspline& s)
 {
 	if (this != &s) {
 		base_spline<S>::operator=(s);
+		K = s.K;
 		delete clp;
 		int c = base_spline<S>::icox;
-		clp = new T[c];
-		memcpy(clp, s, c * sizeof(T));
+		clp = new T[c * K];
+		memcpy(clp, (T*)s, c * K * sizeof(T));
 	}
 	return *this;
 }

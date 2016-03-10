@@ -728,18 +728,22 @@ _wrap_pspline_bracket(int argc, VALUE *argv, VALUE self)
 	Get_pspline(self, bsp);
 	int N = bsp->Grid();
 	int K = bsp->Unit_size();
-try {
 	mresult = rb_ary_new();
+try {
 	for (int m = 0; m < argc; ++m) {
+		vargs = argv[m];
 		poly_array<double> val;
-		if (TYPE(argv[m]) == T_ARRAY) {
+		if (TYPE(vargs) == T_ARRAY) {
+			int L = RARRAY_LEN(vargs);
+			if (L != N)
+				rb_raise(rb_eArgError, "Array length = %d, it should be %d.", L, N);
 			double args[N+1];
 			for (int i = 0; i < N; ++i)
-				args[i] = NUM2DBL(RARRAY_PTR(argv[m])[i]);
+				args[i] = NUM2DBL(RARRAY_PTR(vargs)[i]);
 			poly<double> arg(args, N);
 			val = (*bsp)[arg];
 		} else
-			val = (*bsp)[NUM2DBL(argv[m])];
+			val = (*bsp)[NUM2DBL(vargs)];
 		if (K == 1) 
 			vresult = rb_float_new(val[0]);
 		else {
@@ -754,6 +758,12 @@ try {
 }
 	return argc == 1 ? rb_ary_shift(mresult) : mresult;
 }
+
+void ps_eArgError(VALUE err)
+{
+	VALUE str = rb_String(err);
+	rb_raise(rb_eArgError, "wrong argument %s", StringValuePtr(str));
+}
 /*******************************************************************************
 	関数値
 	pspline#value(x, d = 0)
@@ -767,7 +777,7 @@ _wrap_pspline_value(int argc, VALUE *argv, VALUE self)
 	VALUE varg1, varg2, varg3;
 	pspline<double> *arg0;
 	int argn, arg2 = 0, *carg2 = NULL;
-	double *carg3 = NULL;
+	double arg1, *args, *carg3 = NULL;
 	VALUE vargs, vresult = Qnil;
 
 	rb_scan_args(argc, argv, "12", &varg1, &varg2, &varg3);
@@ -780,51 +790,67 @@ _wrap_pspline_value(int argc, VALUE *argv, VALUE self)
 		arg2 = NUM2INT(varg2);
 		carg3 = new double[N];
 		Check_Type(varg3, T_ARRAY);
+		if (RARRAY_LEN(varg3) != N) ps_eArgError(varg3);
 		for (int i = 0; i < N; ++i)
 			carg3[i] = NUM2DBL(RARRAY_PTR(varg3)[i]);
 	}
 	// 偏微分
 	if (argc == 2) {
-		carg2 = new int[N];
-		Check_Type(varg2, T_ARRAY);
-		for (int i = 0; i < N; ++i)
-			carg2[i] = NUM2INT(RARRAY_PTR(varg2)[i]);
+		if (TYPE(varg2) == T_ARRAY && RARRAY_LEN(varg2) == N) {
+			carg2 = new int[N];
+			for (int i = 0; i < N; ++i)
+				carg2[i] = NUM2INT(RARRAY_PTR(varg2)[i]);
+		} else if (TYPE(varg1) != T_ARRAY) {
+			arg2 = NUM2INT(varg2);
+			argc = 0;
+		} else ps_eArgError(varg2);
 	}
 	// Argument list
-	Check_Type(varg1, T_ARRAY);
-	argn = RARRAY_LEN(varg1);
-	vargs = make_list(argn, RARRAY_PTR(varg1));
-	argn = RARRAY_LEN(vargs);
-	if (argn == N) {
-		double args[N+1];
-		for (int i = 0; i < N; ++i)
-			args[i] = NUM2DBL(RARRAY_PTR(vargs)[i]);
-		poly_array<double> val;
+	poly<double> arg;
+	args = NULL;
+	if (TYPE(varg1) == T_ARRAY) {
+		argn = RARRAY_LEN(varg1);
+		vargs = make_list(argn, RARRAY_PTR(varg1));
+		argn = RARRAY_LEN(vargs);
+		if (argn == N) {
+			args = new double[N+1];
+			for (int i = 0; i < N; ++i)
+				args[i] = NUM2DBL(RARRAY_PTR(vargs)[i]);
+		} else ps_eArgError(varg1);
+	} else
+		if (argc <= 1) arg1 = NUM2DBL(varg1);
+		else ps_eArgError(varg1);
+	if (argc < 2) argc ^= 1;
+	if (args) arg = poly<double>(args, N);
+	poly_array<double> val;
 try {
-		poly<double> arg(args, N);
-		switch (argc) {
-			case 1: 	// 関数値
-				val = (*arg0)(arg);
-				break;
-			case 2: 	// 偏微分 (partial derivative)
-				val = (*arg0)(arg, carg2);
-				delete[] carg2;
-				break;
-			case 3: 	// 全微分 (total derivative)
-				val = (*arg0)(arg, arg2, carg3);
-				delete[] carg3;
-		}
+	switch (argc) {
+		case 0: 	// 関数値
+			val = args ? (*arg0)(arg) : (*arg0)(arg1);
+			delete[] args;
+			break;
+		case 1: 	// 関数積の微分
+			val = (*arg0)(arg1, arg2);
+			delete[] args;
+			break;
+		case 2: 	// 偏微分 (partial derivative)
+			val = (*arg0)(arg, carg2);
+			delete[] carg2;
+			break;
+		case 3: 	// 全微分 (total derivative)
+			val = (*arg0)(arg, arg2, carg3);
+			delete[] carg3;
+	}
 } catch (const char *c) {
 	rb_raise(rb_eRuntimeError, "%s", c);
 }
-		if (K == 1) 
-			vresult = rb_float_new(val[0]);
-		else {
-			vresult = rb_ary_new();
-			for (int j = 0; j < K; ++j)
-				rb_ary_push(vresult, rb_float_new(val[j]));
-		}
-	} else rb_raise(rb_eArgError, "wrong argument value");
+	if (K == 1) 
+		vresult = rb_float_new(val[0]);
+	else {
+		vresult = rb_ary_new();
+		for (int j = 0; j < K; ++j)
+			rb_ary_push(vresult, rb_float_new(val[j]));
+	}
 	return vresult;
 }
 
@@ -876,13 +902,15 @@ _wrap_pspline_plot(int argc, VALUE *argv, VALUE self)
 	double *arg1[N], *arg2[K];
 	arg3 = NUM2INT(vdp);
 	if (argc > 2) {
-		Check_Type(vjbn, T_ARRAY);
-		int n = RARRAY_LEN(vjbn);
-		if (n != N)
-			rb_raise(rb_eArgError, "Differential orders = %d, it should be %d", n, N);
 		arg4 = new int[N];
-		for (int i = 0; i < N; ++i)
-			arg4[i] = NUM2INT(RARRAY_PTR(vjbn)[i]);
+		if (TYPE(vjbn) == T_ARRAY) {
+			int n = RARRAY_LEN(vjbn);
+			if (n != N)
+				rb_raise(rb_eArgError, "Differential orders = %d, it should be %d", n, N);
+			for (int i = 0; i < N; ++i)
+				arg4[i] = NUM2INT(RARRAY_PTR(vjbn)[i]);
+		} else
+			arg4[0] = NUM2INT(vjbn);
 	}
 	Check_Type(varg, T_ARRAY);
 	N = RARRAY_LEN(varg);
@@ -890,10 +918,16 @@ _wrap_pspline_plot(int argc, VALUE *argv, VALUE self)
 	int result;
 	for (int i = 0; i < N; ++i) rb_ary_push(vstu, rb_ary_shift(varg));
 try {
-	comb_array<double> stu = make_var(N, vstu);
-//		printf("dp = %d, jbn = %d\n", arg3, arg4);
-//		stu.print("\n");
-	result = plot<double>(*arg0, stu, arg1, arg2, arg3, arg4);
+	if (TYPE(RARRAY_PTR(vstu)[0]) == T_ARRAY) {
+		comb_array<double> stu = make_var(N, vstu);
+		result = plot<double>(*arg0, stu, arg1, arg2, arg3, arg4);
+	} else {
+		double *x = new double[N];
+		for (int i = 0; i < N; i++) x[i] = NUM2DBL(RARRAY_PTR(vstu)[i]);
+		result = plot<double>(*arg0, N, x, arg1, arg2, arg3, arg4[0]);
+		delete[] x;
+		N = 1;
+	}
 } catch (const char *c) {
 	rb_raise(rb_eRuntimeError, "%s", c);
 }
@@ -919,22 +953,27 @@ _wrap_bspline_mul(VALUE self, VALUE varg)
 {
 	bspline<double> *arg0;
 	Get_bspline(self, arg0);
-	pspline<double> result;
+	pspline<double> *result;
 	if (rb_obj_is_kind_of(varg, cBspline)) {
 		bspline<double> *arg1;
 	    Data_Get_Struct(varg, bspline<double>, arg1);
-	    if (!arg1) rb_raise(rb_eRuntimeError, "This bspline already released");
-		auto res = (*arg0) * (*arg1);
-	printf("Enter bspline Mul bspline\n");
-		result = res;
+	    if (!arg1) rb_raise(rb_eArgError, "Not Bspline object");
+		result = new pspline<double>((*arg0) * (*arg1));
 	} else if (rb_obj_is_kind_of(varg, cPspline)) {
 		pspline<double> *arg1;
 	    Data_Get_Struct(varg, pspline<double>, arg1);
-	    if (!arg1) rb_raise(rb_eRuntimeError, "This pspline already released");
-		result = (*arg0) * (*arg1);
-	} else
-		rb_raise(rb_eArgError, "Illegal argument");
-	return Wrap_pspline(cPspline, new pspline<double>(result));
+	    if (!arg1) rb_raise(rb_eArgError, "Not Pspline Object");
+		result = new pspline<double>((*arg0) * (*arg1));
+	} else {
+		double a = NUM2DBL(varg);
+		bspline<double> *result = new bspline<double>(*arg0);
+		double *p = *result;
+		int k = result->Unit_size();
+		int c = ((base_spline<double>*)result)->Icox();
+		for (int i = 0; i < c * k; i++) p[i] *= a;
+		return Wrap_bspline(cBspline, result);
+	}
+	return Wrap_pspline(cPspline, result);
 }
 
 static VALUE
@@ -942,18 +981,26 @@ _wrap_pspline_mul(VALUE self, VALUE varg)
 {
 	pspline<double> *arg0;
 	Get_pspline(self, arg0);
-	pspline<double> result;
+	pspline<double> *result;
 	if (rb_obj_is_kind_of(varg, cBspline)) {
 		bspline<double> *arg1;
-		Get_bspline(varg, arg1);
-		result = (*arg0) * (*arg1);
+	    Data_Get_Struct(varg, bspline<double>, arg1);
+	    if (!arg1) rb_raise(rb_eArgError, "Not Bspline object");
+		result = new pspline<double>((*arg0) * (*arg1));
 	}/* else if (rb_obj_is_kind_of(varg, cPspline)) {
 		pspline<double> *arg1;
-		Get_pspline(varg, arg1);
-		result = (*arg0) * (*arg1);
-	}*/ else
-		rb_raise(rb_eArgError, "Illegal argument");
-	return Wrap_pspline(cPspline, new pspline<double>(result));
+	    Data_Get_Struct(varg, pspline<double>, arg1);
+	    if (!arg1) rb_raise(rb_eArgError, "Not Pspline object");
+		result = new pspline<double>((*arg0) * (*arg1));
+	}*/ else {
+		double a = NUM2DBL(varg);
+		result = new pspline<double>(*arg0);
+		double *p = *result;
+		const Int& c = result->values->icox;
+		int s = c.grid_size();
+		for (int i = 0; i < s; i++) p[i] *= a;
+	}
+	return Wrap_pspline(cPspline, result);
 }
 
 static void
