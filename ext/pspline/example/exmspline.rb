@@ -39,7 +39,8 @@ elsif Jbn < 0
 end
 
 s = Ps.plot(vv, Dp, Jbn) do |a,b|
-	c = Ps.value(a[0],2)
-	printf "% .2f % f % f\n", a[0], b[0], c
+	c = As.sekibun(a[0])
+	d = Ps.sekibun(a[0])
+	printf "% .2f % f % f % f\n", a[0], b[0], c, d
 end
 # STDERR.puts s

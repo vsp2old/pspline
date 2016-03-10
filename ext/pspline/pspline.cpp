@@ -867,10 +867,13 @@ _wrap_pspline_sekibun(int argc, VALUE *argv, VALUE self)
 	vargs = make_list(argc, argv);
 	argc = RARRAY_LEN(vargs);
 try {
-	if (argc == N) {
+	if (argc == N || argc == 1) {
 		double s[N+1];
 		for (int i = 0; i < N; ++i)
-			s[i] = NUM2DBL(RARRAY_PTR(vargs)[i]);
+			if (i == 0 || argc == N)
+				s[i] = NUM2DBL(RARRAY_PTR(vargs)[i]);
+			else
+				s[i] = s[i-1];
 		poly<double> args(s, N);
 		poly_array<double> val = bsp->sekibun(args);
 		if (K == 1) 
