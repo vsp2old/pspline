@@ -1,5 +1,5 @@
 #! /usr/local/bin/ruby
-require '../pspline.so'
+require 'pspline'
 include PSPLINE
 
 Ad = [[-4.0, 1.34095e-3],[-3.6, 2.98189e-3],[-3.2, 6.62420e-3],[-2.8, 1.46827e-2],
