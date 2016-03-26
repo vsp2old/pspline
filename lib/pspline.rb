@@ -61,3 +61,30 @@ class Cfft
 end
 
 end
+
+class Array
+	def fft_complex_forward
+		PSPLINE::fft_complex_transform(self, 1)
+	end
+	def fft_complex_backward
+		PSPLINE::fft_complex_transform(self, 0)
+	end
+	def fft_complex_inverse
+		PSPLINE::fft_complex_transform(self, -1)
+	end
+	def fft_complex_spline order:
+		PSPLINE::fft_complex_bspline(self, order)
+	end
+	def fft_real_forward
+		PSPLINE::fft_real_transform(self, 1)
+	end
+	def fft_real_backward
+		PSPLINE::fft_real_transform(self, 0)
+	end
+	def fft_real_inverse
+		PSPLINE::fft_real_transform(self, -1)
+	end
+	def fft_real_spline order:
+		PSPLINE::fft_real_bspline(self, order)
+	end
+end
