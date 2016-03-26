@@ -3,59 +3,56 @@ require "pspline.so"
 
 module PSPLINE
 
-class Rfft
+class Rfft < Array
 
 	def initialize(data)
-		@R = fft_real_transform(data, 1)
+		super(fft_real_transform(data, 1))
 	end
 	def [] (t)
-		fft_real_get(@R, t)
+		fft_real_get(self, t)
 	end
-	def spline(j)
+	def spline order:
 		@V = []
-		fft_real_bspline(@R, j) {|t, z| @V.push t}
+		fft_real_bspline(self, order) {|t, z| @V.push t}
 	end
 	def axis
 		@V.dup
 	end
 	def inverse
-		fft_real_transform(@R, -1)
+		fft_real_transform(self, -1)
 	end
 	def backword
-		fft_real_transform(@R, 0)
-	end
-	def real
-		@R.dup
+		fft_real_transform(self, 0)
 	end
 
 end
 
-class Cfft
+class Cfft < Array
 
 	def initialize(data)
-		@F = fft_complex_transform(data, 1)
+		super(fft_complex_transform(data, 1))
 	end
 	def [] (t)
-		fft_complex_get(@F, t)
+		fft_complex_get(self, t)
 	end
-	def spline(j)
+	def spline order:
 		@V = []
-		fft_complex_bspline(@F, j) {|t, z| @V.push t}
+		fft_complex_bspline(self, order) {|t, z| @V.push t}
 	end
 	def inverse
-		fft_complex_transform(@F, -1)
+		fft_complex_transform(self, -1)
 	end
 	def backword
-		fft_real_transform(@F, 0)
+		fft_real_transform(self, 0)
 	end
 	def axis
 		@V.dup
 	end
 	def real
-		@F[0].dup
+		self.first.dup
 	end
-	def imag
-		@F[1].dup
+	def image
+		self.last.dup
 	end
 
 end
@@ -63,28 +60,12 @@ end
 end
 
 class Array
+
 	def fft_complex_forward
-		PSPLINE::fft_complex_transform(self, 1)
-	end
-	def fft_complex_backward
-		PSPLINE::fft_complex_transform(self, 0)
-	end
-	def fft_complex_inverse
-		PSPLINE::fft_complex_transform(self, -1)
-	end
-	def fft_complex_spline order:
-		PSPLINE::fft_complex_bspline(self, order)
+		PSPLINE::Cfft.new(self)
 	end
 	def fft_real_forward
-		PSPLINE::fft_real_transform(self, 1)
+		PSPLINE::Rfft.new(self)
 	end
-	def fft_real_backward
-		PSPLINE::fft_real_transform(self, 0)
-	end
-	def fft_real_inverse
-		PSPLINE::fft_real_transform(self, -1)
-	end
-	def fft_real_spline order:
-		PSPLINE::fft_real_bspline(self, order)
-	end
+
 end

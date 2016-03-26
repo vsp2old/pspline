@@ -33,4 +33,25 @@ end
 s = Bs.plot(vv, Dp, Jbn) do |a,b|
 	printf "% .2f % f\n", a, b[0]
 end
-# STDERR.puts s
+# Draw Graph
+require "gnuplot"
+ 
+Gnuplot.open do |gp|
+	Gnuplot::Plot.new( gp ) do |plot|
+		plot.title  'sec2(x)'
+		plot.ylabel 'Y'
+		plot.xlabel 'X'
+ 		x = vv.map {|v| v[0]}
+		y = vv.map {|v| v[1]}
+		plot.data << Gnuplot::DataSet.new( [x, y] ) do |ds|
+			ds.with = "lines"
+			ds.linewidth = 2
+			ds.notitle
+		end
+		y = x.map {|v| Bs.sekibun(v)}
+		plot.data << Gnuplot::DataSet.new( [x, y] ) do |ds|
+			ds.with = "lines"
+			ds.title = "Integral"
+		end
+	end
+end

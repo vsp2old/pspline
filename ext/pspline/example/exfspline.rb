@@ -9,23 +9,23 @@ XY = [ [0, 1],[0, 1],[0, 1],[1, 0,],[1, 0,],[1, 0],[1, 0],[0, 1],[0, 1],[0, 1] ]
 fs = Cfft.new(XY)
 fs.real.each {|x| printf("% .2f ", x) }
 puts
-fs.imag.each {|y| printf("% .2f ", y) }
+fs.image.each {|y| printf("% .2f ", y) }
 puts
 
-printf "Real :"
+printf " Real:"
 -5.upto(5) {|t|
 	w = fs[t]
 	printf "% .2f ", w[0]
 }
 puts
-printf "Imag :"
+printf "Image:"
 -5.upto(5) {|t|
 	w = fs[t]
 	printf "% .2f ", w[1]
 }
 puts
 
-bs = fs.spline(1)
+bs = fs.spline order:1
 vv = fs.axis
 
 puts "# Interpolation points"

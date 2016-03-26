@@ -7,23 +7,23 @@ printf "# real FFT data points\n"
 X = [ 0, 0, 0, 1, 1, 1, 1, 0, 0, 0 ]
 
 fs = Rfft.new(X);
-fs.real.each {|x| printf("% .2f ", x) }
+fs.each {|x| printf("% .2f ", x) }
 puts
 
-printf "Real :"
+printf " Real:"
 -5.upto(5) {|t|
 	w = fs[t]
 	printf "% .2f ", w[0]
 }
 puts
-printf "Imag :"
+printf "Image:"
 -5.upto(5) {|t|
 	w = fs[t]
 	printf "% .2f ", w[1]
 }
 puts
 
-bs = fs.spline(3)
+bs = fs.spline order:3
 vv = fs.axis
 
 puts "# Interpolation points"
