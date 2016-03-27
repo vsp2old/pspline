@@ -29,6 +29,7 @@ See pspline.wiki at https://github.com/vsp2old/pspline .
 5.0.2	Upload for release.   
 5.0.3	Add class PSPLINE::Rfft, class PSPLINE::Cfft.   
 5.0.4	Add method line_integral.   
+5.0.5	Add Multiple Bspline.   
 
 ## Development
 
