@@ -44,3 +44,25 @@ s = Ps.plot(vv, Dp, Jbn) do |a,b|
 	printf "% .2f % f % f % f\n", a[0], b[0], c, d
 end
 # STDERR.puts s
+require "gnuplot"
+ 
+Gnuplot.open do |gp|
+	Gnuplot::Plot.new( gp ) do |plot|
+		plot.title  'Multiple Bspline'
+		plot.ylabel 'Y'
+		plot.xlabel 'X'
+ 		x = vv.map {|u,v| u[0]}
+		y = vv.map {|u,v| v[0]}
+		plot.data << Gnuplot::DataSet.new( [x, y] ) do |ds|
+			ds.with = "lines"
+			ds.linewidth = 2
+			ds.notitle
+		end
+		y = vv.map {|u,v| Ps[[u[0], 0.5*u[0]]]}
+		plot.data << Gnuplot::DataSet.new( [x, y] ) do |ds|
+			ds.with = "lines"
+			ds.linewidth = 2
+			ds.notitle
+		end
+	end
+end
